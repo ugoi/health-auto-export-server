@@ -3,5 +3,6 @@ server/dist
 server/.env
 .env
 grafana-data
+mcp/.venv
 
 seed_data/*
