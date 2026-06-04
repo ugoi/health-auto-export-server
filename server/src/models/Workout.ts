@@ -23,6 +23,12 @@ interface IHeartRate extends IMeasurement {
   source: string;
 }
 
+interface IHeartRateSummary {
+  avg?: IMeasurement;
+  min?: IMeasurement;
+  max?: IMeasurement;
+}
+
 interface ILocation {
   latitude: number;
   longitude: number;
@@ -41,23 +47,53 @@ interface IRoute {
   locations: ILocation[];
 }
 
+interface ISwimStroke {
+  qty: number;
+  units: string;
+  date: Date;
+  source: string;
+  style?: string;
+}
+
 export interface WorkoutData {
   id: string;
   name: string;
   start: Date;
   end: Date;
   duration: number;
-  // --- Optional fields ---
   distance?: IMeasurement;
   activeEnergyBurned?: IMeasurement;
-  activeEnergy?: IQuantityMetric;
+  activeEnergy?: IQuantityMetric[];
   heartRateData?: IHeartRate[];
   heartRateRecovery?: IHeartRate[];
+  heartRate?: IHeartRateSummary;
+  avgHeartRate?: IMeasurement;
+  maxHeartRate?: IMeasurement;
   stepCount?: IQuantityMetric[];
+  stepCadence?: IQuantityMetric[];
   temperature?: IMeasurement;
   humidity?: IMeasurement;
   intensity?: IMeasurement;
+  speed?: IMeasurement;
+  avgSpeed?: IMeasurement;
+  maxSpeed?: IMeasurement;
   route?: ILocation[];
+  isIndoor?: boolean;
+  location?: string;
+  metadata?: Record<string, any>;
+  // Swim fields
+  swimCadence?: IMeasurement;
+  swimDistance?: IQuantityMetric[];
+  swimStroke?: ISwimStroke[];
+  totalSwimmingStrokeCount?: IMeasurement;
+  lapLength?: IMeasurement;
+  // Run/walk fields
+  walkingAndRunningDistance?: IQuantityMetric[];
+  // Cycling fields
+  cyclingDistance?: IQuantityMetric[];
+  // Elevation fields
+  elevationUp?: IMeasurement;
+  elevationDown?: IMeasurement;
 }
 
 interface IWorkout extends Document, Omit<WorkoutData, 'id' | 'route'> {
@@ -65,6 +101,14 @@ interface IWorkout extends Document, Omit<WorkoutData, 'id' | 'route'> {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const MeasurementSchema = new Schema(
+  {
+    qty: { type: Number, required: true },
+    units: { type: String, required: true },
+  },
+  { _id: false, strict: false },
+);
 
 const QuantityMetricSchema = new Schema<IQuantityMetric>(
   {
@@ -84,6 +128,15 @@ const HeartRateSchema = new Schema<IHeartRate>(
     date: { type: Date, required: true },
     units: { type: String, required: true },
     source: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const HeartRateSummarySchema = new Schema(
+  {
+    avg: { type: MeasurementSchema, required: false },
+    min: { type: MeasurementSchema, required: false },
+    max: { type: MeasurementSchema, required: false },
   },
   { _id: false },
 );
@@ -113,18 +166,16 @@ const WorkoutSchema = new Schema(
       required: true,
       min: 0,
     },
-    // --- Optional fields ---
     activeEnergyBurned: {
-      type: QuantityMetricSchema,
-      required: true,
+      type: MeasurementSchema,
+      required: false,
     },
     distance: {
-      type: QuantityMetricSchema,
+      type: MeasurementSchema,
       required: false,
-      min: 0,
     },
     activeEnergy: {
-      type: QuantityMetricSchema,
+      type: [QuantityMetricSchema],
       required: false,
     },
     heartRateData: {
@@ -135,20 +186,100 @@ const WorkoutSchema = new Schema(
       type: [HeartRateSchema],
       required: false,
     },
+    heartRate: {
+      type: HeartRateSummarySchema,
+      required: false,
+    },
+    avgHeartRate: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    maxHeartRate: {
+      type: MeasurementSchema,
+      required: false,
+    },
     stepCount: {
       type: [QuantityMetricSchema],
       required: false,
     },
+    stepCadence: {
+      type: [QuantityMetricSchema],
+      required: false,
+    },
     temperature: {
-      type: QuantityMetricSchema,
+      type: MeasurementSchema,
       required: false,
     },
     humidity: {
-      type: QuantityMetricSchema,
+      type: MeasurementSchema,
       required: false,
     },
     intensity: {
-      type: QuantityMetricSchema,
+      type: MeasurementSchema,
+      required: false,
+    },
+    speed: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    avgSpeed: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    maxSpeed: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    isIndoor: {
+      type: Boolean,
+      required: false,
+    },
+    location: {
+      type: String,
+      required: false,
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
+      required: false,
+    },
+    // Swim fields
+    swimCadence: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    swimDistance: {
+      type: [QuantityMetricSchema],
+      required: false,
+    },
+    swimStroke: {
+      type: [Schema.Types.Mixed],
+      required: false,
+    },
+    totalSwimmingStrokeCount: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    lapLength: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    // Run/walk fields
+    walkingAndRunningDistance: {
+      type: [QuantityMetricSchema],
+      required: false,
+    },
+    // Cycling fields
+    cyclingDistance: {
+      type: [QuantityMetricSchema],
+      required: false,
+    },
+    // Elevation fields
+    elevationUp: {
+      type: MeasurementSchema,
+      required: false,
+    },
+    elevationDown: {
+      type: MeasurementSchema,
       required: false,
     },
   },
@@ -159,11 +290,9 @@ const WorkoutSchema = new Schema(
 
 const locationSchema = new Schema<ILocation>(
   {
-    // Required fields
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     timestamp: { type: Date, required: true },
-    // Optional fields
     course: { type: Number, required: false },
     courseAccuracy: { type: Number, required: false },
     speed: { type: Number, required: false },

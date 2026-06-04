@@ -33,13 +33,31 @@ export const getWorkouts = async (req: Request, res: Response) => {
           const startDate = new Date(workout.start);
           const endDate = new Date(workout.end);
 
-          const result = {
+          const result: Record<string, any> = {
             id: workout.workoutId,
             workout_type: workout.name,
             start_time: startDate.toISOString(),
             end_time: endDate.toISOString(),
             duration_minutes: workout.duration / 60,
-            calories_burned: workout.activeEnergyBurned?.qty || null,
+            active_energy_burned: workout.activeEnergyBurned || null,
+            distance: workout.distance || null,
+            speed: workout.speed || null,
+            avg_speed: workout.avgSpeed || null,
+            max_speed: workout.maxSpeed || null,
+            avg_heart_rate: workout.avgHeartRate || null,
+            max_heart_rate: workout.maxHeartRate || null,
+            temperature: workout.temperature || null,
+            humidity: workout.humidity || null,
+            intensity: workout.intensity || null,
+            is_indoor: workout.isIndoor ?? null,
+            location: workout.location || null,
+            // Swim
+            swim_cadence: workout.swimCadence || null,
+            total_stroke_count: workout.totalSwimmingStrokeCount || null,
+            lap_length: workout.lapLength || null,
+            // Elevation
+            elevation_up: workout.elevationUp || null,
+            elevation_down: workout.elevationDown || null,
           };
 
           return result;
@@ -80,6 +98,8 @@ export const getWorkout = async (req: Request, res: Response) => {
             type: 'Heart Rate',
             timestamp: new Date(hr.date).toISOString(),
             value: hr.Avg,
+            min: hr.Min,
+            max: hr.Max,
           })) || [];
 
         const heartRateRecovery =
@@ -89,7 +109,35 @@ export const getWorkout = async (req: Request, res: Response) => {
             value: hr.Avg,
           })) || [];
 
-        return { heartRateData, heartRateRecovery };
+        return {
+          id: workout.workoutId,
+          workout_type: workout.name,
+          start_time: new Date(workout.start).toISOString(),
+          end_time: new Date(workout.end).toISOString(),
+          duration_minutes: workout.duration / 60,
+          active_energy_burned: workout.activeEnergyBurned || null,
+          distance: workout.distance || null,
+          speed: workout.speed || null,
+          avg_speed: workout.avgSpeed || null,
+          max_speed: workout.maxSpeed || null,
+          avg_heart_rate: workout.avgHeartRate || null,
+          max_heart_rate: workout.maxHeartRate || null,
+          temperature: workout.temperature || null,
+          humidity: workout.humidity || null,
+          intensity: workout.intensity || null,
+          is_indoor: workout.isIndoor ?? null,
+          location: workout.location || null,
+          swim_cadence: workout.swimCadence || null,
+          total_stroke_count: workout.totalSwimmingStrokeCount || null,
+          lap_length: workout.lapLength || null,
+          elevation_up: workout.elevationUp || null,
+          elevation_down: workout.elevationDown || null,
+          heartRateData,
+          heartRateRecovery,
+          stepCount: workout.stepCount || [],
+          swimDistance: workout.swimDistance || [],
+          swimStroke: workout.swimStroke || [],
+        };
       });
 
     if (!workoutMetadata) {

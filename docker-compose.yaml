@@ -16,13 +16,27 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_DB}
 
+  hae-grafana:
+    container_name: hae-grafana
+    image: grafana/grafana-oss:latest
+    ports:
+      - "100.104.26.91:3004:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    user: "0:0"
+    restart: unless-stopped
+    networks:
+      - hae_network
+    depends_on:
+      - hae-mongo
+
   hae-server:
     container_name: hae-server
     build:
       context: ./server
       dockerfile: Dockerfile
     ports:
-      - "127.0.0.1:3001:3001"
+      - "100.104.26.91:3001:3001"
     environment:
       - NODE_ENV=${NODE_ENV}
       - MONGO_HOST=${MONGO_HOST}
@@ -43,4 +57,5 @@ networks:
     driver: bridge
 
 volumes:
+  grafana-data:
   mongodb-data:
