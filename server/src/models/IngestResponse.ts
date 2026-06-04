@@ -1,12 +1,12 @@
+interface IngestResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 export interface IngestResponse {
-  metrics?: {
-    success: boolean;
-    message?: string;
-    error?: string;
-  };
-  workouts?: {
-    success: boolean;
-    message?: string;
-    error?: string;
-  };
+  metrics?: IngestResult;
+  workouts?: IngestResult;
+  ecg?: IngestResult;
+  heartRateNotifications?: IngestResult;
 }

@@ -5,6 +5,8 @@ import mongodb from './database/mongodb';
 import ingesterRouter from './routes/ingester';
 import metricsRouter from './routes/metrics';
 import workoutsRouter from './routes/workouts';
+import ecgRouter from './routes/ecg';
+import heartRateNotificationsRouter from './routes/heartRateNotifications';
 import { requireReadAuth, requireWriteAuth } from './middleware/auth';
 
 const app = express();
@@ -29,6 +31,8 @@ app.use('/api/data', requireWriteAuth, ingesterRouter);
 // Apply read auth middleware to data retrieval routes
 app.use('/api/metrics', requireReadAuth, metricsRouter);
 app.use('/api/workouts', requireReadAuth, workoutsRouter);
+app.use('/api/ecg', requireReadAuth, ecgRouter);
+app.use('/api/heart-rate-notifications', requireReadAuth, heartRateNotificationsRouter);
 
 app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Hello world!' });
