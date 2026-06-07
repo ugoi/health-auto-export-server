@@ -37,6 +37,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "100.104.26.91:3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       - NODE_ENV=${NODE_ENV}
       - MONGO_HOST=${MONGO_HOST}
