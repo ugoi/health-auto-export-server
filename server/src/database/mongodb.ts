@@ -7,7 +7,7 @@ const username = process.env.MONGO_USERNAME;
 const password = process.env.MONGO_PASSWORD;
 const host = process.env.MONGO_HOST;
 const port = process.env.MONGO_PORT;
-const url = `mongodb://${username}:${password}@${host}:${port}/`;
+const url = `mongodb://${username}:${password}@${host}:${port}/?authSource=admin`;
 const dbName = process.env.MONGO_DB;
 
 const options: mongoose.ConnectOptions = {

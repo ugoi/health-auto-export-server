@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import mongoose from 'mongoose';
 
 import mongodb from './database/mongodb';
 import ingesterRouter from './routes/ingester';
@@ -33,6 +34,15 @@ app.use('/api/metrics', requireReadAuth, metricsRouter);
 app.use('/api/workouts', requireReadAuth, workoutsRouter);
 app.use('/api/ecg', requireReadAuth, ecgRouter);
 app.use('/api/heart-rate-notifications', requireReadAuth, heartRateNotificationsRouter);
+
+app.get('/health', (req: express.Request, res: express.Response) => {
+  const state = mongoose.connection.readyState;
+  const status = state === 1 ? 200 : 503;
+  res.status(status).json({
+    status: state === 1 ? 'ok' : 'degraded',
+    mongo: mongoose.STATES[state],
+  });
+});
 
 app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Hello world!' });

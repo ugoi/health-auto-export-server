@@ -6,3 +6,4 @@ grafana-data
 mcp/.venv
 
 seed_data/*
+backups/
