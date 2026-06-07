@@ -77,6 +77,92 @@ If you are unfamiliar with Grafana, you can import pre-configured dashboards to 
 3. Upload the dashboard JSON file from the `dashboard-examples` folder, or copy the JSON into the `Import via dashboard JSON model` text area
 4. You can find a full list of metrics available in [`MetricName.ts`](https://github.com/HealthyApps/health-auto-export-server/blob/4163bb5e8aa8d2cdac2a9971c164c0fa46604866/server/src/models/MetricName.ts#L1). These can be used in the datasource URL in order to fetch each metric from the database.
 
+## Self-Hosted Server Deployment
+
+For deploying on a VPS or headless server (not Docker Desktop).
+
+### Environment Variables
+
+Run `sh ./create-env.sh` for a fresh setup, or create `.env` manually with:
+
+| Variable | Description |
+|----------|-------------|
+| `NODE_ENV` | `production` |
+| `MONGO_HOST` | `hae-mongo` (Docker service name) |
+| `MONGO_PORT` | `27017` |
+| `MONGO_DB` | Database name (e.g. `healthautoexport`) |
+| `MONGO_USERNAME` | MongoDB root username |
+| `MONGO_PASSWORD` | MongoDB root password (avoid leading `-` characters) |
+| `READ_TOKEN` | API key for GET endpoints (`sk-` prefix recommended) |
+| `WRITE_TOKEN` | API key for POST /api/data (`sk-` prefix recommended) |
+
+### Start the Stack
+
+```bash
+docker compose up -d --build
+```
+
+### Health Checks
+
+| Endpoint | Expected |
+|----------|----------|
+| `GET /health` | `{"status":"ok","mongo":"connected"}` |
+| `GET /` | `Hello world!` |
+| `docker inspect hae-mongo --format '{{.State.Health.Status}}'` | `healthy` |
+| `docker inspect hae-server --format '{{.State.Health.Status}}'` | `healthy` |
+
+Both MongoDB and the server have Docker healthchecks. MongoDB gets a 20s start period with 5 retries; the server starts after Mongo is healthy.
+
+### API Endpoints
+
+All data endpoints require an `api-key` header.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/data` | WRITE_TOKEN | Ingest metrics, workouts, ECG, heart rate notifications |
+| GET | `/api/metrics/:name` | READ_TOKEN | Query metrics by name with optional date range |
+| GET | `/api/workouts` | READ_TOKEN | List workouts with optional date range |
+| GET | `/api/ecg` | READ_TOKEN | List ECG recordings with optional date range |
+| GET | `/api/ecg/:id` | READ_TOKEN | ECG detail with voltage measurements |
+| GET | `/api/heart-rate-notifications` | READ_TOKEN | Heart rate notifications with optional date range |
+
+Date filtering: `?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+
+### MongoDB Backup & Restore
+
+Data lives in Docker volume `mongodb-data`. To back up:
+
+```bash
+docker exec hae-mongo mongodump \
+  --uri="mongodb://USER:PASS@localhost:27017/DB?authSource=admin" \
+  --archive=/tmp/backup.archive
+
+docker cp hae-mongo:/tmp/backup.archive ./backups/
+```
+
+To restore (preserves existing data, upserts on conflicts):
+
+```bash
+docker cp ./backups/backup.archive hae-mongo:/tmp/backup.archive
+
+docker exec hae-mongo mongorestore \
+  --uri="mongodb://USER:PASS@localhost:27017/DB?authSource=admin" \
+  --archive=/tmp/backup.archive
+```
+
+> **Note:** If your `MONGO_PASSWORD` starts with `-`, you must URL-encode it in connection strings (e.g. `-` becomes `%2D`). The `mongosh -p` flag will misparse it.
+
+### Fresh Server Recovery Checklist
+
+1. Clone the repo
+2. Create `.env` (restore from backup or run `create-env.sh`)
+3. `docker compose up -d --build`
+4. Wait ~30s for MongoDB healthcheck to pass
+5. Verify: `curl http://localhost:3001/health`
+6. Restore MongoDB backup if migrating data
+7. Reconfigure Health Auto Export app with new server URL and WRITE_TOKEN
+8. Reconfigure Grafana Infinity datasource with new READ_TOKEN
+
 # Troubleshooting
 
 If you encounter issues:
