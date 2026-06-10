@@ -29,7 +29,7 @@ services:
     container_name: hae-grafana
     image: grafana/grafana-oss:latest
     ports:
-      - "100.104.26.91:3004:3000"
+      - "127.0.0.1:3014:3000"
     volumes:
       - ./grafana-data:/var/lib/grafana
     user: "0:0"
@@ -46,7 +46,6 @@ services:
       context: ./server
       dockerfile: Dockerfile
     ports:
-      - "100.104.26.91:3001:3001"
       - "127.0.0.1:3001:3001"
     environment:
       - NODE_ENV=${NODE_ENV}
