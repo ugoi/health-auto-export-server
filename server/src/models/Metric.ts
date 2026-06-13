@@ -166,7 +166,11 @@ const SleepSchema: Schema = new Schema({
   metadata: { type: Object, required: false },
 });
 
-SleepSchema.index({ date: 1, source: 1 }, { unique: true });
+// Apple Health / HAE sends multiple sleep segments per night for the same
+// date+source — each segment must persist as its own record, so uniqueness
+// is per segment interval, not per calendar date.
+SleepSchema.index({ source: 1, sleepStart: 1, sleepEnd: 1 }, { unique: true });
+SleepSchema.index({ sleepEnd: 1 });
 
 export const createMetricModel = (name: MetricName) => {
   return mongoose.model<IMetric>(String(name), BaseMetricSchema, String(name));

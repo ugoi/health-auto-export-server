@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
+import { SleepModel } from '../models/Metric';
+
 dotenv.config();
 
 const username = process.env.MONGO_USERNAME;
@@ -21,6 +23,9 @@ async function connect() {
   try {
     await mongoose.connect(url, options);
     console.log(`Connected successfully to ${dbName}`);
+    // Drop the stale {date, source} unique index (it collapsed multiple
+    // sleep segments per night into one record) and build the new one.
+    await SleepModel.syncIndexes();
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
     process.exit(-1);

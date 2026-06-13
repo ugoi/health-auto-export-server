@@ -15,6 +15,7 @@ import {
   createMetricModel,
 } from '../models/Metric';
 import { MetricName } from '../models/MetricName';
+import { aggregateSleepByDay, sleepDayQuery } from '../sleepDay';
 import { filterFields, parseDate } from '../utils';
 
 export const getMetrics = async (req: Request, res: Response) => {
@@ -50,7 +51,15 @@ export const getMetrics = async (req: Request, res: Response) => {
         metrics = await HeartRateModel.find(query).lean();
         break;
       case MetricName.SLEEP_ANALYSIS:
-        metrics = await SleepModel.find(query).lean();
+        // Sleep is stored as UTC instants but a night belongs to the LOCAL
+        // date it ends on — query by local sleep-day window, not naive UTC date.
+        if (fromDate && toDate) {
+          query = sleepDayQuery(fromDate, toDate);
+        }
+        metrics = await SleepModel.find(query).sort({ sleepStart: 1 }).lean();
+        if (req.query.aggregate === 'daily') {
+          metrics = aggregateSleepByDay(metrics as unknown as SleepMetric[]);
+        }
         break;
       default:
         metrics = await createMetricModel(selectedMetric).find(query).lean();
@@ -121,11 +130,17 @@ export const saveMetrics = async (ingestData: IngestData): Promise<IngestRespons
             })),
           );
         case MetricName.SLEEP_ANALYSIS:
+          // Multiple segments share the same date+source — key on the segment
+          // interval so later segments don't overwrite earlier ones.
           const sleepMetrics = metrics as SleepMetric[];
           return SleepModel.bulkWrite(
             sleepMetrics.map((metric) => ({
               updateOne: {
-                filter: { source: metric.source, date: metric.date },
+                filter: {
+                  source: metric.source,
+                  sleepStart: metric.sleepStart,
+                  sleepEnd: metric.sleepEnd,
+                },
                 update: { $set: metric },
                 upsert: true,
               },
