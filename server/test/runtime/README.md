@@ -1,0 +1,3 @@
+Run `smoke.cjs` as the candidate image's Node entrypoint with an isolated disposable MongoDB 8.0.34 and no published ports. The script starts `dist/app.js`, verifies Mongo readiness, four read/write token boundary failures, two repeated sleep ingestions, segment idempotency, and Europe/Zurich daily aggregation. Set `MONGO_HOST`, `MONGO_PORT`, `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DB`, and `TZ=Europe/Zurich` to the synthetic database. The script supplies its own synthetic read/write tokens. Never point it at Production.
+
+The database needs at least 1 GiB of temporary space: Mongo's index creation requires 500 MiB free after startup. An undersized 256 MiB fixture failed that prerequisite; the 1 GiB fixture passed.
