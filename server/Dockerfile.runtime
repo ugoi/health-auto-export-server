@@ -1,0 +1,9 @@
+# Application and installed dependency bytes come from the verified live image.
+FROM ste334-hae-artifacts:67a5792 AS deployed
+FROM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
+WORKDIR /usr/src/server
+COPY --from=deployed /usr/src/server/ /usr/src/server/
+COPY runtime-artifacts.json verify-runtime.cjs /opt/ste334-hae/
+RUN node /opt/ste334-hae/verify-runtime.cjs
+EXPOSE 3001
+CMD ["yarn", "start"]

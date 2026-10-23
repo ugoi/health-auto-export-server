@@ -9,15 +9,21 @@ import { aggregateSleepByDay, sleepDayQuery, zonedMidnightUtc } from '../src/sle
 let mongod: MongoMemoryServer;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri(), { dbName: 'hae_test' });
+  // Alpine has no official MongoMemoryServer binary. The runtime check supplies
+  // an explicitly named, isolated Docker fixture; ordinary local tests are unchanged.
+  const fixtureUri = process.env.STE334_TEST_MONGO_URI;
+  if (fixtureUri && new URL(fixtureUri).hostname !== 'ste334-hae-mongo') {
+    throw new Error('Refuse a non-fixture MongoDB address');
+  }
+  if (!fixtureUri) mongod = await MongoMemoryServer.create();
+  await mongoose.connect(fixtureUri || mongod.getUri(), { dbName: 'hae_test' });
   // Mirrors startup: builds the per-segment unique index
   await SleepModel.syncIndexes();
 }, 120000);
 
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongod.stop();
+  if (mongod) await mongod.stop();
 });
 
 beforeEach(async () => {
